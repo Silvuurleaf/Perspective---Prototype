@@ -30,6 +30,7 @@ class SelectionWidget(QWidget):
             return self.combobox.currentText(), [int(el) for el in self.le.text().split(",")]
         except Exception as p:
             print("error P: {}".format(p))
+
     def check_state(self, text):
         sender = self.sender()
         validator = sender.validator()

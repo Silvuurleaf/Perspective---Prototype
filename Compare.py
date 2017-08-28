@@ -14,9 +14,9 @@ class CompareDialog(QDialog):
         self.setLayout(QVBoxLayout())
         self.setWindowTitle("Perspective - MultiGraph Window")
 
-        self.names = names
-        self.selectWidgetList = []
-        self.config = {}
+        self.names = names          #saves name of the table
+        self.selectWidgetList = []  #List that will hold selector widget objects
+        self.config = {}            #dictionary that will hold the plot type and row data
 
         ly = QHBoxLayout()
         ly.addWidget(QLabel("Input Format Table Name row, numbers, seperated, with, commas", self))
@@ -54,7 +54,7 @@ class CompareDialog(QDialog):
 
         print("Plot Command has been issued")
 
-        if self.sender() == self.boxPlot:   #checks to see which button was pressed
+        if self.sender() == self.boxPlot:   #checks to see which button in the compare window was pressed
             print(self.config)
             self.config['type'] = 'box'
         else:
@@ -63,20 +63,21 @@ class CompareDialog(QDialog):
         selected = []
 
         #w is a selector object
-        for w in self.selectWidgetList:
-            selected.append(w.getRows())    #grabs user row input
+        for selector in self.selectWidgetList:
+            selected.append(selector.getRows())    #grabs user row input
         self.config['values'] = selected    #assigns data from table as values
+
         self.accept()
 
     def addSelections(self):
-        w = Selector.SelectionWidget(self.names, self)
+        selector = Selector.SelectionWidget(self.names, self)   #creates a selector object
 
         #allows for box/scatter plot btns to be pressed
-        w.completed.connect(self.boxPlot.setEnabled)
-        w.completed.connect(self.scatterPlot.setEnabled)
+        selector.completed.connect(self.boxPlot.setEnabled)
+        selector.completed.connect(self.scatterPlot.setEnabled)
 
         try:
-            self.selectWidgetList.append(w)     #everytime a new selector widget is created save it in a list
-            self.selectionsLayout.addWidget(w)  #add to our layout
+            self.selectWidgetList.append(selector)     #everytime a new selector widget is created save it in a list
+            self.selectionsLayout.addWidget(selector)  #add to our layout
         except Exception as selectorListErr:
             print("error occurred when trying to append selector widget to object list........ERROR:{}".format(selectorListErr))

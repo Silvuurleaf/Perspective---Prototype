@@ -38,70 +38,72 @@ class AttributesDialog(QDialog):
         Tolerance = QLabel("Tolerance")
         Tolerance.setMinimumSize(95,20)
         ToleranceValue = QLineEdit(str(StatsDictionary['Tolerance'][row]))
-        ToleranceValue.setMaximumSize(40,20)
+        ToleranceValue.setMaximumSize(55,20)
         print(StatsDictionary['Tolerance'][row])
 
         #Median
         Median = QLabel("Tolerance")
         Median.setMinimumSize(95,20)
         MedianValue = QLineEdit(str(StatsDictionary['Median'][row]))
-        MedianValue.setMaximumSize(40,20)
+        MedianValue.setMaximumSize(55,20)
         print(StatsDictionary['Median'][row])
 
         Mean = QLabel("Mean")
         Mean.setMinimumSize(95,20)
         MeanValue = QLineEdit(str(StatsDictionary['Mean'][row]))
-        MeanValue.setMaximumSize(40,20)
+        MeanValue.setMaximumSize(55,20)
         print(StatsDictionary['Mean'][row])
 
         Min = QLabel("Minimum")
         Min.setMinimumSize(95,20)
         MinValue = QLineEdit(str(StatsDictionary['Min'][row]))
-        MinValue.setMaximumSize(40,20)
+        MinValue.setMaximumSize(55,20)
         print(StatsDictionary['Min'][row])
 
         Max = QLabel("Max")
         Max.setMinimumSize(95,20)
         MaxValue = QLineEdit(str(StatsDictionary['Max'][row]))
-        MaxValue.setMaximumSize(40,20)
+        MaxValue.setMaximumSize(55,20)
         print(StatsDictionary['Max'][row])
 
         Range = QLabel("Range")
         Range.setMinimumSize(95,20)
         RangeValue = QLineEdit(str(StatsDictionary['Range'][row]))
-        RangeValue.setMaximumSize(40,20)
+        RangeValue.setMaximumSize(55,20)
         print(StatsDictionary['Range'][row])
 
         Deviation = QLabel("Deviation")
         Deviation.setMinimumSize(95,20)
         DeviationValue = QLineEdit(str(StatsDictionary['Deviation'][row]))
-        DeviationValue.setMaximumSize(40,20)
+        DeviationValue.setMaximumSize(55,20)
         print(StatsDictionary['Deviation'][row])
 
         StandardDeviation = QLabel("Standard Deviation")
         StandardDeviation.setMinimumSize(95,20)
         StdDevValue = QLineEdit(str(StatsDictionary['Standard Deviation'][row]))
-        StdDevValue.setMaximumSize(40,20)
+        StdDevValue.setMaximumSize(75,20)
         print(StatsDictionary['Standard Deviation'][row])
 
         Variance = QLabel("Variance")
         Variance.setMinimumSize(95,20)
         VarianceValue = QLineEdit(str(StatsDictionary['Variance'][row]))
-        VarianceValue.setMaximumSize(40,20)
+        VarianceValue.setMaximumSize(75,20)
         print(StatsDictionary['Variance'][row])
 
         LowerBound = QLabel("LowerBound")
         LowerBound.setMinimumSize(95,20)
         LowerBoundValue = QLineEdit(str(StatsDictionary['Lower Bound'][row]))
-        LowerBoundValue.setMaximumSize(40,20)
+        LowerBoundValue.setMaximumSize(55,20)
         print(StatsDictionary['Lower Bound'][row])
 
         UpperBound = QLabel("UpperBound")
         UpperBound.setMinimumSize(95,20)
         UpperBoundValue = QLineEdit(str(StatsDictionary['Upper Bound'][row]))
-        UpperBoundValue.setMaximumSize(40,20)
+        UpperBoundValue.setMaximumSize(55,20)
         print(StatsDictionary['Upper Bound'][row])
 
+        self.UpBoundValue = StatsDictionary['Upper Bound'][row]
+        self.LowerBoundValue = StatsDictionary['Upper Bound'][row]
 
         #Creating main layouts
         QH_NameBox = QHBoxLayout()

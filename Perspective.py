@@ -1,37 +1,32 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-
 # imports/libraries
 # <editor-fold desc="Imports and Libraries">
+#from PyQt5 import QtCore, QtGui, QtWidgets         Notsure if we even need these lines???
+# from PyQt5.QtCore import Qt, pyqtSignal
 import sys
-from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtWidgets import (QLineEdit, QPushButton, QSlider, QApplication, QVBoxLayout, QHBoxLayout,
-                             QApplication, QWidget, QLabel, QCheckBox, QRadioButton,QMainWindow,
-                             QFileDialog, QMenu, QMessageBox, QAction, QToolBar, QDialog, QTableWidget, QTableWidgetItem)
-from PyQt5.QtCore import Qt, pyqtSignal
-
+from PyQt5.QtWidgets import (QLineEdit, QPushButton, QVBoxLayout, QHBoxLayout,
+                             QApplication, QWidget, QLabel,QMainWindow,
+                             QFileDialog, QDialog)
 import matplotlib
 
 matplotlib.use("Qt5Agg")
 from matplotlib import pyplot as plt
 plt.style.use(['ggplot'])
+
+#Makes the plot figure layout Tight to ensure everything fits on the screen
 from matplotlib import rcParams
 rcParams.update({'figure.autolayout': True})
 
-import csv
 import pandas as pd
 
-import linecache
-
-#Custom Modules
+#Custom Modules imported from the same project folder
 import CreateFigure
-import Compare #edwins version modified
+import Compare
 import TableUI
 import PTable
-
-
-
+import DragHandler
 # </editor-fold>
 
 class MainWindow(QMainWindow):
@@ -51,6 +46,7 @@ class MainWindow(QMainWindow):
         # Initializes the user interface window
         self.initializeUI()
         self.setMinimumSize(550,160)
+
         #calls the class TablePopWin to create the window to ask the user to name the table
         self.TablePopWin = TableUI.TablePopup()
 
@@ -61,6 +57,8 @@ class MainWindow(QMainWindow):
         self.TableNameDB = []
         self.TableDictionary = {}
 
+        #self.AnnotationList = []    #stores a list of all annotations for this particular table
+        self.Annotations = None
 
         ###set the main widget responsible for making widgets appear on scren
         self.main_widget = QWidget(self)
@@ -122,22 +120,21 @@ class MainWindow(QMainWindow):
 
         # </editor-fold>
 
-
-        self.show()
+        self.show() #Shows
 
     def ImportFile(self):
         ###Actual importation and manipulation of Data CSV Files
 
-        ### on click opens a dialog window asks user to pick a file from the directory and then stores the file's path.
+        ### When import button is clicked opens a dialog window prompting user to pick a file from a directory and then stores the file's path.
         fileName, _ = QFileDialog.getOpenFileName(self, "QFileDialog.getOpenFileName()", "", "(*.csv)")
         if fileName:
             print(fileName)
             self.FileNameEdit.setText(fileName)     #set text of LineEdit to be filename
             Data = pd.read_csv(open(fileName, encoding="ISO-8859-1"))   #reads csv and converts to a pandas DF
-            # print(Data)
+            # encoding is to be able to read different versions of CSV
 
-            ### removes all the statistics information from the file and reports just the raw data
 
+            ### seperates raw Measurements from statistics data
             # <editor-fold desc="Data Reformatting Proccess">
 
             ###Saving the statistics data to be placed into a properties tab
@@ -176,65 +173,76 @@ class MainWindow(QMainWindow):
             # print("Data has been dropped")
             # </editor-fold>
 
-            #Grabs the index as the row headers, and grabs the column index to be the new column headers
-            rowHeaders = self.BaseStats.index
-            colHeaders = self.BaseStats.columns.values
 
-            col = len(colHeaders)
-            row = len(rowHeaders)
+            rowHeaders = self.BaseStats.index               #Grabs the index as the row headers
+            colHeaders = self.BaseStats.columns.values      #Grabs the column index to be the new column headers
 
-            print("SETTING UP THE ROW VALUE............................{}".format(row))
+            NumOFcol = len(colHeaders)
+            NumOFrow = len(rowHeaders)
+
+
             print("Table is about to be created")
 
-            # Create an instance of the table passing the data, number of rows and cols
-            self.Table = PTable.CreateTable(self.BaseStats, row, col, colHeaders, self.TableStats)
+            # Create an instance of the table passing the data, number of rows, cols, and statistics data
+            self.Table = PTable.CreateTable(self.BaseStats, NumOFrow, NumOFcol, colHeaders, self.TableStats)
 
             print("Table creation was successful")
 
+            ### Table popup window is shown and ask for user to give newly defined table a
 
-            ### Table popup window is shown and ask for user to give newly defined table a name
             self.TablePopWin.show()
 
-
-            # First popup window when table is created signal is sent
+            # Once the table has been created a signal is emitted to open the Table Name Dialog Window
             self.TablePopWin.TableString.connect(self.NameAssignment)
 
-
-            # connecting signal created after user renames a table from the context menu
+            # When the user clicks rename feature, in the context menu, a signal is connected to rename the table
             self.Table.reNameSignal.connect(self.ReNameAdjustments)
 
-            # connects the emitted data signal to plot initiator
-            self.Table.dataSignal.connect(self.SinglePlot)
+            # Connects the scatter plot signal from context menu
+            self.Table.ScatterDataSignal.connect(self.ScatterSinglePlot)
 
-            #embed the table widget
+            # Connects the box plot signal from context menu
+            self.Table.BoxDataSignal.connect(self.BoxSinglePlot)
+
+            #connect annotations to the plot field
+            self.Table.AnnotationSignal.connect(self.AddAnnotations)
+
+            #Embeds the tablewidget into our mainwindow screen
             self.vboxData.addWidget(self.Table)
+    def AddAnnotations(self, AnnotationList):
+        # try:
+        #     print("adding annotations to plot")
+        #     print(AnnotationList)
+        #     self.figure = CreateFigure.FigureAssembly()
+        #     for i in AnnotationList:
+        #         self.figure.plt.text(0,0,i, picker = True)
+        #         dragh = DragHandler.DragHandler()
+        # except Exception as AnnotationPltErr:
+        #     print("error occured when trying to plot Annotations.....ERROR: {}".format(AnnotationPltErr))
+
+        self.Annotations = AnnotationList
 
     def NameAssignment(self, TableName):
         print("Name assignment method has been executed")
-        #current name of the table is stored to be able to reference the dictionary
-        #and the new name is assigned to the table's attributes
-        oldName = self.Table.name
-        self.Table.name = TableName
+
+        oldName = self.Table.name           #current name of the table is stored to be able to reference the dictionary
+        self.Table.name = TableName         #and the new name is assigned to the table's attributes
 
         print("adjusting table name database")
 
 
-        #loops through dictionary untill we find the old key (old name of table) and then we replace it
-        #this way the new table name is associated with the appropriate object
+        #loops through dictionary until we find the old key (old name of table) and then we replace it
+        #this way the new table's name is associated with the appropriate instance of the table object
         for i in range(len(self.TableNameDB)):
             if self.TableNameDB[i] == oldName:
                 self.TableNameDB[i] = TableName
-
-        #DEBUGG checks
-        #print(self.TableNameDB)
-        #print(self.Table.name)
 
         print("Before TableDictionary undergoes reformatting")
         # print("List of table objects........... {}".format(self.TableDB))
         # print("List of table names..............{}".format(self.TableNameDB))
         # print("Dictionary.......................{}".format(self.TableDictionary))
 
-        self.DataBaseHandler()
+        self.DataBaseHandler()  #updates the dictionary in case anything was changed
 
         # print("List of table objects........... {}".format(self.TableDB))
         # print("List of table names..............{}".format(self.TableNameDB))
@@ -243,11 +251,15 @@ class MainWindow(QMainWindow):
     def ReNameAdjustments(self, oldName, newName):
         print("rename has been called from the context menu on the QtableWidget")
 
+        #Works the same as name assignment. Replaces the keys for the table dictionary.
+
         print("table name database before for loop")
+
         # print(self.TableNameDB)
         for i in range(len(self.TableNameDB)):
             if self.TableNameDB[i] == oldName:
                 self.TableNameDB[i] = newName
+
         #print(self.TableNameDB)
 
         print("Before TableDatabase is altered")
@@ -265,8 +277,8 @@ class MainWindow(QMainWindow):
         print("Collecting table names and Qtable objects")
 
         self.TableDB.append(self.Table)            #Append Qtable Objects to list
-        self.TableNameDB.append(self.Table.name)  # list stores all names of table objects
-        self.TableDictionary = dict(zip(self.TableNameDB, self.TableDB)) #Combine the two above lists to make a dictionary
+        self.TableNameDB.append(self.Table.name)   #list stores all names of table objects
+        self.TableDictionary = dict(zip(self.TableNameDB, self.TableDB)) #Combine the two above lists to make our table dictionary
 
         print("Database has been adjusted")
     def OpenCompare(self):
@@ -279,7 +291,7 @@ class MainWindow(QMainWindow):
             if self.compareWin.exec_() == QDialog.Accepted: #checks to see if proper input was given and calls Plot if it was
                 self.PlotCatalyst(self.compareWin.config)
         except Exception as OpeningCompare:
-            print("Error on opening compare window ERROR: {}".format(OpeningCompare))
+            print("error occured when trying to open compare window ERROR: {}".format(OpeningCompare))
 
     def PlotCatalyst(self, config):
         print("Inside Plot Catalyst")
@@ -290,6 +302,10 @@ class MainWindow(QMainWindow):
 
         print(config['values'])
         print(type_plot)
+
+        #values = list of RowLists
+        #Rows = List of row indices from a table
+        #Row = singular row index of  a table
 
         #Create an instance of plot figure to plot data onto
         self.Multifigure = CreateFigure.FigureAssembly()
@@ -304,6 +320,7 @@ class MainWindow(QMainWindow):
 
             try:
                 for row in rows:
+
                     # print("about to iterate through row values")
                     # print("printing row count {}".format(table.rowCount()))
                     # print("data type of row value: {}".format(type(row)))
@@ -311,6 +328,7 @@ class MainWindow(QMainWindow):
                     if row < table.rowCount():  #loops through all the rows
                         print("2nd for loop embeded")
                         data, NullIndex = table.rowbyIndex(row) #outputs the data in the table and the index location
+
                         print("Printing data now")
                         print(data)
                         print(type_plot, name, row, data, tbHeaders)
@@ -322,20 +340,34 @@ class MainWindow(QMainWindow):
 
             self.ConfirmPlot(type_plot)
 
+    def BoxSinglePlot(self,y, StatsDataFrame, RowIndex):
+        print("Preparing singular plot construction")
+        try:
+            self.figure = CreateFigure.FigureAssembly()              #create basic figure object that will hold our data
+            print("HERE IS ANNOTATIONS.........................{}".format(self.Annotations))
 
-    def SinglePlot(self, x, y, PlotVal):
+            if self.Annotations != None:
+                print("self.Anntations was not empty")
+                self.figure.plotAnnotations(self.Annotations)
+
+            self.figure.plotDataBox(y, StatsDataFrame, RowIndex)     #from object we call method .plotData and pass our x,y data and plot the graph
+
+
+        except Exception as CreateBoxSingleFigureErr:
+            print("About to create singualr boxplot but found an error........ERROR: {}".format(CreateBoxSingleFigureErr))
+
+    def ScatterSinglePlot(self, x, y):
 
         print("Preparing singular plot construction")
-        print(x)
-        print(y)
-        f = CreateFigure.FigureAssembly()   #create basic figure object for plotting
-        f.plotData(x, y, PlotVal, True)     #from object we call method .plotData and pass our x,y data and plot the graph
+
+        self.figure = CreateFigure.FigureAssembly()   #create basic figure object for plotting
+        self.figure.ScatterPlotData(x, y)                    #from object we call method .plotData and pass our x,y data and plot the graph
 
     def initiateMultiPlot(self,type_plot, name, row, data, columnHeaders, NullIndex):
 
         #call the object Multifigure, instanstiated early in PlotCatalyst(), and call its method .MultiPlot
         #passes required arguments to plot several sets of data on the same figure
-        self.Multifigure.MultiPlot(data,columnHeaders,type_plot,name, row, NullIndex, False)
+        self.Multifigure.MultiPlot(data,columnHeaders,type_plot,name, row, NullIndex)
 
     def ConfirmPlot(self, PlotV):
         print("Confirming finishes on plot collection")
